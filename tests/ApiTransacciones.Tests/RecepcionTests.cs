@@ -53,4 +53,18 @@ public class RecepcionTests
         var second = await Post();
         Assert.Equal(first.PaymentId, second.PaymentId); // mismo pago, no se creó otro
     }
+
+    [Fact]
+    public async Task ConsultarPago_DevuelveEstadoActual()
+    {
+        using var app = new TestAppFactory();
+        var client = app.CreateClient();
+        var post = new HttpRequestMessage(HttpMethod.Post, "/payments")
+        { Content = JsonContent.Create(new CreatePaymentRequest(1500m, "ARS", "cli")) };
+        post.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        var created = await (await client.SendAsync(post)).Content.ReadFromJsonAsync<PaymentAccepted>();
+
+        var view = await client.GetFromJsonAsync<PaymentView>($"/payments/{created!.PaymentId}");
+        Assert.Equal(created.PaymentId, view!.PaymentId);
+    }
 }
