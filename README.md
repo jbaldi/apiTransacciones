@@ -59,8 +59,10 @@ misma API desde `wwwroot/`) para disparar pagos y ver todo en vivo:
 - **Guión del procesador** + **escenarios rápidos** (Feliz, Timeout→conciliación,
   Breaker→alternativo, FAILED compensa) para forzar cada caso con un clic.
 - Click en un pago → **detalle** con el log de eventos como comprobante de auditoría.
+- Botón **🗑 Limpiar** (dos clics para confirmar) → resetea el tablero de la demo.
 
-Endpoint que la alimenta: `GET /payments` (lista todos, más nuevos primero).
+Endpoints que la alimentan: `GET /payments` (lista todos, más nuevos primero) y
+`DELETE /payments` (limpia todo — sólo para la demo).
 
 ## Tests
 

@@ -81,6 +81,17 @@ public static class PaymentsEndpoints
             return Results.Ok(pagos);
         });
 
+        // Limpieza del tablero de la demo: borra todos los pagos, su Outbox y su log de eventos.
+        // (Sólo para la demo — en un sistema real el log de auditoría es inmutable y no se borra.)
+        app.MapDelete("/payments", async (PaymentsDbContext db, CancellationToken ct) =>
+        {
+            var borrados = await db.Payments.CountAsync(ct);
+            await db.Events.ExecuteDeleteAsync(ct);
+            await db.Outbox.ExecuteDeleteAsync(ct);
+            await db.Payments.ExecuteDeleteAsync(ct);
+            return Results.Ok(new { borrados });
+        });
+
         // Consulta del estado actual del pago.
         app.MapGet("/payments/{id:guid}", async (Guid id, PaymentsDbContext db, CancellationToken ct) =>
         {

@@ -119,6 +119,10 @@ input:focus,select:focus{border-color:var(--accent)}
 .table-head h2{border:0;padding:0}
 .table-head .live{font-family:"IBM Plex Mono";font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}
 .table-head .live i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.4s ease-in-out infinite}
+.clear-btn{font-family:"IBM Plex Mono";font-size:11.5px;font-weight:600;color:var(--muted);
+  background:var(--surface-2);border:1px solid var(--hair-strong);border-radius:8px;padding:6px 11px;cursor:pointer;transition:.15s}
+.clear-btn:hover{color:var(--fallido);border-color:var(--fallido)}
+.clear-btn.armed{color:#fff;background:var(--fallido);border-color:var(--fallido)}
 @keyframes blink{50%{opacity:.25}}
 .table-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -265,7 +269,10 @@ td.num{text-align:right}
     <div class="panel table-panel">
       <div class="table-head">
         <h2>Pagos</h2>
-        <span class="live"><i></i> en vivo · <span id="count">0</span></span>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span class="live"><i></i> en vivo · <span id="count">0</span></span>
+          <button class="clear-btn" id="clearBtn" title="Borra todos los pagos de la demo">🗑 Limpiar</button>
+        </div>
       </div>
       <div class="table-scroll">
         <table>
@@ -409,6 +416,21 @@ async function renderDrawer(id){
       <div class="r-total"><span>ESTADO</span>${chip(p.state)}</div>
     </div></div>`;
 }
+
+/* ---- limpiar pagos (confirmación de dos clics) ---- */
+let clearArmed=false, clearTimer=null;
+$('clearBtn').onclick=async()=>{
+  const b=$('clearBtn');
+  if(!clearArmed){
+    clearArmed=true; b.classList.add('armed'); b.textContent='¿Borrar todo? clic de nuevo';
+    clearTimer=setTimeout(()=>{clearArmed=false;b.classList.remove('armed');b.textContent='🗑 Limpiar';},3000);
+    return;
+  }
+  clearTimeout(clearTimer); clearArmed=false; b.classList.remove('armed'); b.textContent='🗑 Limpiar';
+  if(selectedId) closeDrawer();
+  try{ await api('/payments',{method:'DELETE'}); }catch(e){}
+  refresh();
+};
 
 /* ---- salud / conexión ---- */
 async function health(){
