@@ -20,7 +20,7 @@ public class EnvioTests
     // Espera hasta que el pago llegue a un estado esperado o timeout (los workers son async).
     private static async Task<Payment> EsperarEstado(TestAppFactory app, Guid id, params string[] estados)
     {
-        for (var i = 0; i < 50; i++)
+        for (var i = 0; i < 80; i++)
         {
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
@@ -32,11 +32,11 @@ public class EnvioTests
     }
 
     [Fact]
-    public async Task Breaker_SeAbre_TrasFallos_YRuteaAlAlternativo()
+    public async Task FalloClaroDelPrimary_RuteaAlAlternativo_YCobra()
     {
         using var app = new TestAppFactory();
         var client = app.CreateClient();
-        // Primary siempre falla → breaker abre → OpenPass (alternative) cobra.
+        // Primary rechaza siempre → se rutea la MISMA key al alternativo (OpenPass), que cobra.
         await client.PostAsJsonAsync("/demo/processor-behavior",
             new ProcessorBehaviorRequest("primary", "fail", 1000, "PAID"));
 
@@ -52,7 +52,7 @@ public class EnvioTests
     {
         using var app = new TestAppFactory();
         var client = app.CreateClient();
-        // Primary siempre timeout; alternative también, para que no lo "salve".
+        // Primary y alternative timeoutean, y el status queda UNKNOWN: no se puede confirmar.
         await client.PostAsJsonAsync("/demo/processor-behavior",
             new ProcessorBehaviorRequest("primary", "timeout", 1000, "UNKNOWN"));
         await client.PostAsJsonAsync("/demo/processor-behavior",

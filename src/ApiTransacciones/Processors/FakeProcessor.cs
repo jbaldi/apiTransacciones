@@ -11,8 +11,8 @@ public class FakeProcessor(string name, ProcessorBehavior behavior, TimeProvider
         switch (behavior.Mode)
         {
             case "timeout" when misbehave:
-                await Task.Delay(TimeSpan.FromSeconds(30), clock, ct); // será cortado por el timeout de Polly
-                throw new TimeoutException();
+                // Simulamos un timeout del procesador: no sabemos si cobró o no.
+                throw new TimeoutException("simulación de timeout del procesador");
             case "fail" when misbehave:
                 return new ChargeResult(ChargeOutcome.Failed, null, "rechazado por el procesador");
             case "slow":

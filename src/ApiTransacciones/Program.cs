@@ -2,6 +2,7 @@ using ApiTransacciones.Api;
 using ApiTransacciones.Persistence;
 using ApiTransacciones.Processors;
 using ApiTransacciones.Resilience;
+using ApiTransacciones.Workers;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,9 @@ builder.Services.AddSingleton<ResiliencePipelineFactory>();
 builder.Services.AddSingleton(sp => new ProcessorRouter(
     sp.GetRequiredService<ProcessorRegistry>(),
     sp.GetRequiredService<ResiliencePipelineFactory>()));
+
+// Workers asíncronos: la "cola" (envío).
+builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();
 
