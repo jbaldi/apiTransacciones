@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Consola de Pagos · apiTransacciones</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F4F6F9; --surface:#FFFFFF; --surface-2:#EDF1F6;
+  --ink:#131A24; --muted:#586373; --hair:#DCE2EA; --hair-strong:#C4CDD8;
+  --accent:#0C9E63; --accent-ink:#087A4C; --accent-soft:rgba(15,169,104,.12);
+  --pendiente:#C98A17; --pendiente-bg:rgba(224,168,59,.14);
+  --enproceso:#2F72B8; --enproceso-bg:rgba(59,130,196,.14);
+  --incierto:#6C7686;  --incierto-bg:rgba(139,147,162,.16);
+  --pagado:#0C9E63;    --pagado-bg:rgba(15,169,104,.14);
+  --fallido:#C74A3E;   --fallido-bg:rgba(219,91,78,.14);
+  --shadow:0 1px 2px rgba(19,26,36,.04),0 8px 24px rgba(19,26,36,.06);
+  --shadow-lg:0 2px 4px rgba(19,26,36,.05),0 20px 50px rgba(19,26,36,.14);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0D131C; --surface:#151E2A; --surface-2:#1B2735;
+  --ink:#E7ECF3; --muted:#95A2B5; --hair:#26313F; --hair-strong:#33404F;
+  --accent:#22C27E; --accent-ink:#4BD597; --accent-soft:rgba(34,194,126,.15);
+  --pendiente:#E4B04A; --pendiente-bg:rgba(224,168,59,.16);
+  --enproceso:#5AA0E0; --enproceso-bg:rgba(59,130,196,.18);
+  --incierto:#98A2B3;  --incierto-bg:rgba(139,147,162,.16);
+  --pagado:#22C27E;    --pagado-bg:rgba(34,194,126,.16);
+  --fallido:#E86F62;   --fallido-bg:rgba(219,91,78,.18);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 24px 60px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --ground:#0D131C; --surface:#151E2A; --surface-2:#1B2735;
+  --ink:#E7ECF3; --muted:#95A2B5; --hair:#26313F; --hair-strong:#33404F;
+  --accent:#22C27E; --accent-ink:#4BD597; --accent-soft:rgba(34,194,126,.15);
+  --pendiente:#E4B04A; --pendiente-bg:rgba(224,168,59,.16);
+  --enproceso:#5AA0E0; --enproceso-bg:rgba(59,130,196,.18);
+  --incierto:#98A2B3;  --incierto-bg:rgba(139,147,162,.16);
+  --pagado:#22C27E;    --pagado-bg:rgba(34,194,126,.16);
+  --fallido:#E86F62;   --fallido-bg:rgba(219,91,78,.18);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 24px 60px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;line-height:1.1}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+button,input,select{font-family:inherit;font-size:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:0 22px}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:14px}
+.brand{font-family:"Archivo";font-weight:800;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--hair-strong);transition:.3s}
+.brand .dot.up{background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.brand small{font-family:"IBM Plex Mono";font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.top-actions{display:flex;align-items:center;gap:10px}
+.conn{font-family:"IBM Plex Mono";font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.theme-btn{font-family:"IBM Plex Mono";font-size:12px;font-weight:600;color:var(--muted);
+  background:var(--surface);border:1px solid var(--hair-strong);border-radius:999px;padding:7px 13px;cursor:pointer;display:flex;gap:7px;align-items:center}
+.theme-btn:hover{color:var(--ink);border-color:var(--muted)}
+.theme-btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0}
+.kpi{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi .edge{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc)}
+.kpi .lab{font-family:"IBM Plex Mono";font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--muted)}
+.kpi .val{font-family:"Archivo";font-weight:800;font-size:30px;letter-spacing:-.02em;margin-top:5px;color:var(--kc);font-variant-numeric:tabular-nums}
+
+/* layout principal */
+.grid{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;padding-bottom:60px}
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px}
+.panel h2{font-size:14px;font-weight:700;letter-spacing:.02em;padding:15px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:8px}
+.panel h2 .ic{font-size:14px;color:var(--accent)}
+.panel .body{padding:16px 18px}
+
+/* forms */
+label{display:block;font-family:"IBM Plex Mono";font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--muted);margin:12px 0 5px;text-transform:uppercase}
+label:first-child{margin-top:0}
+input,select{width:100%;background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;padding:9px 11px;color:var(--ink)}
+input:focus,select:focus{border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.key-field{display:flex;gap:7px}
+.key-field input{font-family:"IBM Plex Mono";font-size:12px}
+.icon-btn{flex:none;width:38px;background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;color:var(--muted);cursor:pointer;font-size:15px}
+.icon-btn:hover{color:var(--ink);border-color:var(--muted)}
+.btn{width:100%;margin-top:16px;font-family:"Archivo";font-weight:700;font-size:14px;color:#fff;background:var(--accent);border:none;border-radius:10px;padding:12px;cursor:pointer;transition:filter .15s,transform .1s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn.sec{background:var(--surface-2);color:var(--ink);border:1px solid var(--hair-strong);margin-top:12px}
+.resp{margin-top:12px;font-family:"IBM Plex Mono";font-size:11.5px;padding:9px 11px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);word-break:break-all;display:none}
+.resp.show{display:block}
+.resp.err{background:var(--fallido-bg);color:var(--fallido);border-color:color-mix(in srgb,var(--fallido) 30%,transparent)}
+
+/* guión procesador */
+.proc-block{border:1px solid var(--hair);border-radius:10px;padding:12px;margin-bottom:12px}
+.proc-block .nm{font-family:"IBM Plex Mono";font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.proc-block .nm b{color:var(--enproceso)}
+.mini{font-size:12px;padding:7px 9px}
+
+/* presets */
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.preset{font-family:"IBM Plex Sans";font-size:12px;font-weight:600;text-align:left;line-height:1.25;
+  background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;padding:9px 10px;cursor:pointer;color:var(--ink);transition:.15s}
+.preset:hover{border-color:var(--accent);background:var(--accent-soft)}
+.preset span{display:block;font-family:"IBM Plex Mono";font-size:9.5px;font-weight:500;color:var(--muted);margin-top:2px;letter-spacing:.03em}
+
+/* tabla */
+.table-panel{overflow:hidden}
+.table-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--hair)}
+.table-head h2{border:0;padding:0}
+.table-head .live{font-family:"IBM Plex Mono";font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.table-head .live i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{font-family:"IBM Plex Mono";font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;text-align:left;padding:11px 16px;border-bottom:1px solid var(--hair);white-space:nowrap}
+thead th.num{text-align:right}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--hair);white-space:nowrap;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel{background:var(--accent-soft)}
+td.num{text-align:right}
+.cid{font-family:"IBM Plex Mono";font-size:12px;color:var(--muted)}
+.empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:14px}
+.empty .big{font-family:"Archivo";font-weight:700;font-size:16px;color:var(--ink);margin-bottom:5px}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:"IBM Plex Mono";font-size:11px;font-weight:600;letter-spacing:.03em;padding:3px 9px;border-radius:6px;border:1px solid transparent}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.c-PENDIENTE{color:var(--pendiente);background:var(--pendiente-bg)}
+.c-EN_PROCESO{color:var(--enproceso);background:var(--enproceso-bg)}
+.c-INCIERTO{color:var(--incierto);background:var(--incierto-bg);border-style:dashed;border-color:color-mix(in srgb,var(--incierto) 40%,transparent)}
+.c-INCIERTO::before{animation:blink 1.1s ease-in-out infinite}
+.c-PAGADO{color:var(--pagado);background:var(--pagado-bg)}
+.c-FALLIDO{color:var(--fallido);background:var(--fallido-bg)}
+
+/* drawer detalle */
+.overlay{position:fixed;inset:0;background:rgba(8,12,18,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+.overlay.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,92vw);background:var(--ground);border-left:1px solid var(--hair);
+  box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:41;overflow-y:auto}
+.drawer.open{transform:none}
+.drawer-head{position:sticky;top:0;background:var(--ground);border-bottom:1px solid var(--hair);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.drawer-head h3{font-size:15px;font-weight:700}
+.drawer-head .x{background:var(--surface);border:1px solid var(--hair-strong);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--muted);font-size:16px}
+.drawer-head .x:hover{color:var(--ink)}
+.drawer-body{padding:20px}
+
+/* recibo */
+.receipt{background:var(--surface);border:1px solid var(--hair);box-shadow:var(--shadow);border-radius:6px;font-family:"IBM Plex Mono";position:relative}
+.receipt::before,.receipt::after{content:"";position:absolute;left:0;right:0;height:9px;
+  background:radial-gradient(circle at 6px -2px,transparent 6px,var(--surface) 6px) repeat-x;background-size:14px 9px}
+.receipt::before{top:-8px;transform:rotate(180deg)} .receipt::after{bottom:-8px}
+.r-in{padding:22px 20px}
+.r-title{text-align:center;font-family:"Archivo";font-weight:800;font-size:14px;letter-spacing:.02em}
+.r-sub{text-align:center;font-size:10.5px;color:var(--muted);margin-top:2px}
+.r-div{border-top:1px dashed var(--hair-strong);margin:13px 0}
+.r-line{display:flex;justify-content:space-between;font-size:11.5px;margin:5px 0;gap:12px}
+.r-line span:first-child{color:var(--muted)} .r-line span:last-child{text-align:right;word-break:break-all}
+.r-ev{display:flex;gap:10px;font-size:11px;margin:9px 0;align-items:flex-start}
+.r-ev .tm{color:var(--muted);flex:none;font-size:10px;padding-top:1px}
+.r-ev .nm{font-weight:600}
+.r-total{display:flex;justify-content:space-between;font-family:"Archivo";font-weight:800;font-size:15px;margin-top:4px;align-items:center}
+.r-loading{text-align:center;color:var(--muted);padding:24px;font-size:12px}
+
+@media (max-width:980px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <div class="brand"><span class="dot" id="connDot"></span> Consola de Pagos <small>apiTransacciones</small></div>
+  <div class="top-actions">
+    <span class="conn" id="connTxt">conectando…</span>
+    <button class="theme-btn" id="themeBtn" aria-label="Cambiar tema"><span id="themeIcon">◐</span><span id="themeTxt">Tema</span></button>
+  </div>
+</div></div>
+
+<div class="wrap">
+  <!-- KPIs -->
+  <div class="kpis" id="kpis">
+    <div class="kpi" style="--kc:var(--pendiente)"><div class="edge"></div><div class="lab">PENDIENTE</div><div class="val" id="k-PENDIENTE">0</div></div>
+    <div class="kpi" style="--kc:var(--enproceso)"><div class="edge"></div><div class="lab">EN_PROCESO</div><div class="val" id="k-EN_PROCESO">0</div></div>
+    <div class="kpi" style="--kc:var(--incierto)"><div class="edge"></div><div class="lab">INCIERTO</div><div class="val" id="k-INCIERTO">0</div></div>
+    <div class="kpi" style="--kc:var(--pagado)"><div class="edge"></div><div class="lab">PAGADO</div><div class="val" id="k-PAGADO">0</div></div>
+    <div class="kpi" style="--kc:var(--fallido)"><div class="edge"></div><div class="lab">FALLIDO</div><div class="val" id="k-FALLIDO">0</div></div>
+  </div>
+
+  <div class="grid">
+    <!-- COLUMNA CONTROL -->
+    <div>
+      <div class="panel">
+        <h2><span class="ic">＋</span> Nuevo pago</h2>
+        <div class="body">
+          <div class="row2">
+            <div><label>Monto</label><input id="amount" type="number" value="1500" min="1" step="0.01"></div>
+            <div><label>Moneda</label><input id="currency" value="ARS" maxlength="3"></div>
+          </div>
+          <label>Cliente</label>
+          <input id="customer" value="cli-001">
+          <label>Idempotency-Key</label>
+          <div class="key-field">
+            <input id="idemKey" class="mono" readonly>
+            <button class="icon-btn" id="regenKey" title="Regenerar key">↻</button>
+          </div>
+          <button class="btn" id="sendBtn">Enviar pago →</button>
+          <div class="resp" id="sendResp"></div>
+          <button class="btn sec" id="repeatBtn" title="Reenvía la MISMA key para probar idempotencia">Reenviar misma key (idempotencia)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="ic">⚙</span> Guión del procesador</h2>
+        <div class="body">
+          <div class="proc-block">
+            <div class="nm">Procesador <b>primary</b></div>
+            <div class="row2">
+              <select id="p-mode" class="mini"><option value="ok">ok</option><option value="fail">fail</option><option value="timeout">timeout</option><option value="slow">slow</option></select>
+              <select id="p-status" class="mini"><option value="PAID">status PAID</option><option value="FAILED">status FAILED</option><option value="UNKNOWN">status UNKNOWN</option></select>
+            </div>
+            <label style="margin-top:9px">failCount</label>
+            <input id="p-fail" class="mini" type="number" value="1000" min="0">
+          </div>
+          <div class="proc-block">
+            <div class="nm">Procesador <b>alternative</b> <span style="color:var(--muted)">· OpenPass</span></div>
+            <div class="row2">
+              <select id="a-mode" class="mini"><option value="ok">ok</option><option value="fail">fail</option><option value="timeout">timeout</option><option value="slow">slow</option></select>
+              <select id="a-status" class="mini"><option value="PAID">status PAID</option><option value="FAILED">status FAILED</option><option value="UNKNOWN">status UNKNOWN</option></select>
+            </div>
+            <label style="margin-top:9px">failCount</label>
+            <input id="a-fail" class="mini" type="number" value="1000" min="0">
+          </div>
+          <button class="btn sec" id="applyBtn" style="margin-top:4px">Aplicar guión</button>
+          <div class="resp" id="applyResp"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="ic">▤</span> Escenarios rápidos</h2>
+        <div class="body">
+          <div class="presets" id="presets">
+            <button class="preset" data-scn="feliz">Feliz<span>primary ok → PAGADO</span></button>
+            <button class="preset" data-scn="conciliacion">Timeout → conciliación<span>timeout · status PAID</span></button>
+            <button class="preset" data-scn="breaker">Breaker → alternativo<span>primary fail · alt ok</span></button>
+            <button class="preset" data-scn="compensa">FAILED compensa<span>timeout · status FAILED</span></button>
+          </div>
+          <p style="font-size:11.5px;color:var(--muted);margin:12px 0 0;line-height:1.4">Aplica el guión y crea un pago nuevo de una. Mirá la tabla cambiar de estado en vivo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="panel table-panel">
+      <div class="table-head">
+        <h2>Pagos</h2>
+        <span class="live"><i></i> en vivo · <span id="count">0</span></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Estado</th><th class="num">Monto</th><th>Procesador</th><th class="num">Intentos</th><th>Actualizado</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="empty"><div class="big">Sin pagos todavía</div>Creá uno con el panel de la izquierda o usá un escenario rápido.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Detalle del pago">
+  <div class="drawer-head"><h3>Detalle del pago</h3><button class="x" id="closeDrawer" aria-label="Cerrar">✕</button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<script>
+const $=id=>document.getElementById(id);
+const api=(p,o)=>fetch(p,o);
+const uuid=()=>crypto.randomUUID();
+const fmtMoney=(n,c)=>new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' '+c;
+const fmtTime=iso=>{try{return new Date(iso).toLocaleTimeString('es-AR',{hour12:false})}catch(e){return '—'}};
+const shortId=id=>id.slice(0,8);
+const chip=s=>`<span class="chip c-${s}">${s}</span>`;
+
+/* ---- tema ---- */
+(function(){
+  const root=document.documentElement, sys=()=>matchMedia('(prefers-color-scheme:dark)').matches;
+  let cur=null;
+  function apply(){const d=cur==='dark'||(cur!=='light'&&sys());
+    $('themeIcon').textContent=d?'☾':'☀'; $('themeTxt').textContent=d?'Oscuro':'Claro';}
+  apply();
+  $('themeBtn').onclick=()=>{const d=cur==='dark'||(cur!=='light'&&sys());cur=d?'light':'dark';
+    d?root.setAttribute('data-theme','light'):root.setAttribute('data-theme','dark');apply();};
+})();
+
+/* ---- key ---- */
+$('regenKey').onclick=()=>$('idemKey').value=uuid();
+$('idemKey').value=uuid();
+
+/* ---- crear pago ---- */
+async function crearPago(){
+  const body={amount:parseFloat($('amount').value||'0'),currency:($('currency').value||'ARS').toUpperCase(),customerId:$('customer').value};
+  const r=$('sendResp'); r.className='resp show';
+  try{
+    const res=await api('/payments',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':$('idemKey').value},body:JSON.stringify(body)});
+    const j=await res.json();
+    if(res.ok){r.classList.remove('err'); r.textContent=`${res.status} · ${j.state} · ${shortId(j.paymentId)} — ${j.message||''}`;}
+    else{r.classList.add('err'); r.textContent=`${res.status} · ${j.error||'error'}`;}
+    refresh();
+  }catch(e){r.classList.add('err');r.textContent='No se pudo conectar con la API';}
+}
+$('sendBtn').onclick=()=>{ $('idemKey').value=uuid(); crearPago(); };
+$('repeatBtn').onclick=crearPago; // misma key
+
+/* ---- guión ---- */
+async function aplicarGuion(silent){
+  const posts=[
+    {processor:'primary',mode:$('p-mode').value,failCount:parseInt($('p-fail').value||'0'),statusResult:$('p-status').value},
+    {processor:'alternative',mode:$('a-mode').value,failCount:parseInt($('a-fail').value||'0'),statusResult:$('a-status').value}
+  ];
+  for(const p of posts) await api('/demo/processor-behavior',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  if(!silent){const r=$('applyResp'); r.className='resp show'; r.textContent='Guión aplicado a primary y alternative ✓'; setTimeout(()=>r.classList.remove('show'),2500);}
+}
+$('applyBtn').onclick=()=>aplicarGuion(false);
+
+/* ---- presets ---- */
+const scenarios={
+  feliz:{p:['ok',0,'PAID'],a:['ok',0,'PAID']},
+  conciliacion:{p:['timeout',1000,'PAID'],a:['timeout',1000,'PAID']},
+  breaker:{p:['fail',1000,'PAID'],a:['ok',0,'PAID']},
+  compensa:{p:['timeout',1000,'FAILED'],a:['timeout',1000,'FAILED']},
+};
+function setSel(pre,[mode,fail,status]){ $(pre+'-mode').value=mode; $(pre+'-fail').value=fail; $(pre+'-status').value=status; }
+document.querySelectorAll('.preset').forEach(b=>b.onclick=async()=>{
+  const s=scenarios[b.dataset.scn]; setSel('p',s.p); setSel('a',s.a);
+  await aplicarGuion(true);
+  $('idemKey').value=uuid(); await crearPago();
+});
+
+/* ---- render tabla + kpis ---- */
+let selectedId=null;
+function render(list){
+  const counts={PENDIENTE:0,EN_PROCESO:0,INCIERTO:0,PAGADO:0,FALLIDO:0};
+  list.forEach(p=>counts[p.state]!==undefined&&counts[p.state]++);
+  for(const k in counts) $('k-'+k).textContent=counts[k];
+  $('count').textContent=list.length;
+  $('empty').style.display=list.length?'none':'block';
+  $('tbody').innerHTML=list.map(p=>`
+    <tr data-id="${p.id}" class="${p.id===selectedId?'sel':''}">
+      <td class="cid">${shortId(p.id)}</td>
+      <td>${chip(p.state)}</td>
+      <td class="num">${fmtMoney(p.amount,p.currency)}</td>
+      <td class="mono" style="font-size:12px;color:var(--muted)">${p.processorUsed||'—'}</td>
+      <td class="num">${p.attempts}</td>
+      <td class="mono" style="font-size:12px;color:var(--muted)">${fmtTime(p.updatedAt)}</td>
+    </tr>`).join('');
+  $('tbody').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>openDrawer(tr.dataset.id));
+}
+let lastList=[];
+async function refresh(){
+  try{
+    const res=await api('/payments'); if(!res.ok)return;
+    lastList=await res.json(); render(lastList);
+    if(selectedId&&$('drawer').classList.contains('open')) renderDrawer(selectedId);
+  }catch(e){/* la barra de conexión ya avisa */}
+}
+
+/* ---- drawer ---- */
+async function openDrawer(id){ selectedId=id; $('overlay').classList.add('open'); $('drawer').classList.add('open'); await renderDrawer(id); render(lastList); }
+function closeDrawer(){ selectedId=null; $('overlay').classList.remove('open'); $('drawer').classList.remove('open'); render(lastList); }
+$('closeDrawer').onclick=closeDrawer; $('overlay').onclick=closeDrawer;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+
+async function renderDrawer(id){
+  const p=lastList.find(x=>x.id===id); if(!p)return;
+  let events=[];
+  try{ const r=await api(`/payments/${id}/events`); if(r.ok)events=await r.json(); }catch(e){}
+  const evHtml=events.length? events.map(e=>{
+    let extra=''; try{const d=JSON.parse(e.data); if(d&&Object.keys(d).length)extra=Object.entries(d).map(([k,v])=>`${k}=${v}`).join(' · ');}catch(_){}
+    const hot=/Uncertain|Confirmed|Succeeded|Failed/.test(e.eventType);
+    return `<div class="r-ev"><span class="tm">${fmtTime(e.occurredAt)}</span><span><span class="nm" ${hot?'style="color:var(--accent-ink)"':''}>${e.eventType}</span>${extra?`<br><span style="color:var(--muted)">${extra}</span>`:''}</span></div>`;
+  }).join('') : '<div class="r-loading">Sin eventos aún…</div>';
+  $('drawerBody').innerHTML=`
+    <div class="receipt"><div class="r-in">
+      <div class="r-title">COMPROBANTE DE EVENTOS</div>
+      <div class="r-sub">payment ${shortId(id)} · trazabilidad</div>
+      <div class="r-div"></div>
+      <div class="r-line"><span>monto</span><span>${fmtMoney(p.amount,p.currency)}</span></div>
+      <div class="r-line"><span>idempotency-key</span><span>${p.idempotencyKey}</span></div>
+      <div class="r-line"><span>procesador</span><span>${p.processorUsed||'—'}</span></div>
+      <div class="r-line"><span>intentos</span><span>${p.attempts}</span></div>
+      <div class="r-div"></div>
+      ${evHtml}
+      <div class="r-div"></div>
+      <div class="r-total"><span>ESTADO</span>${chip(p.state)}</div>
+    </div></div>`;
+}
+
+/* ---- salud / conexión ---- */
+async function health(){
+  try{ const r=await api('/health'); const up=r.ok;
+    $('connDot').classList.toggle('up',up); $('connTxt').textContent=up?'API conectada':'API caída';
+  }catch(e){ $('connDot').classList.remove('up'); $('connTxt').textContent='API caída'; }
+}
+
+/* ---- loop ---- */
+health(); refresh();
+setInterval(refresh,1000);
+setInterval(health,4000);
+</script>
+</body>
+</html>

@@ -43,6 +43,10 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<PaymentsDbContext>().Database.EnsureCreated();
 
+// Consola web: servida como estática desde wwwroot (mismo origen que la API).
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapPayments();
 app.MapDemo();

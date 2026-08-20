@@ -44,8 +44,23 @@ PENDIENTE ──▶ EN_PROCESO ──▶ PAGADO
 dotnet run --project src/ApiTransacciones
 ```
 
-Arranca en `http://localhost:5000` (o el puerto que indique la consola). Crea el
+Arranca en `http://localhost:5133` (o el puerto que indique la consola). Crea el
 archivo `pagos.db` (SQLite) automáticamente.
+
+## Consola web
+
+Abrí `http://localhost:5133/` en el navegador: una **consola** (servida por la
+misma API desde `wwwroot/`) para disparar pagos y ver todo en vivo:
+
+- **Nuevo pago** con idempotency-key autogenerada, y botón para reenviar la misma
+  key y ver la idempotencia en acción.
+- **KPIs en vivo** con el conteo por estado y **tabla** con auto-refresh (1s):
+  mirás los pagos pasar `PENDIENTE → EN_PROCESO → INCIERTO → PAGADO` solos.
+- **Guión del procesador** + **escenarios rápidos** (Feliz, Timeout→conciliación,
+  Breaker→alternativo, FAILED compensa) para forzar cada caso con un clic.
+- Click en un pago → **detalle** con el log de eventos como comprobante de auditoría.
+
+Endpoint que la alimenta: `GET /payments` (lista todos, más nuevos primero).
 
 ## Tests
 

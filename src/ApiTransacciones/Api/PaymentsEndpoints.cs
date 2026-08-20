@@ -68,6 +68,19 @@ public static class PaymentsEndpoints
                 new PaymentAccepted(payment.Id, payment.State, "recibido, en proceso"));
         });
 
+        // Listado de todos los pagos (más nuevos primero) para la consola web.
+        app.MapGet("/payments", async (PaymentsDbContext db, CancellationToken ct) =>
+        {
+            var pagos = await db.Payments.AsNoTracking()
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new PaymentListItem(
+                    p.Id, p.Amount, p.Currency, p.State,
+                    p.ProcessorUsed, p.ProcessorRef, p.Attempts,
+                    p.IdempotencyKey, p.CreatedAt, p.UpdatedAt))
+                .ToListAsync(ct);
+            return Results.Ok(pagos);
+        });
+
         // Consulta del estado actual del pago.
         app.MapGet("/payments/{id:guid}", async (Guid id, PaymentsDbContext db, CancellationToken ct) =>
         {
