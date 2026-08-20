@@ -33,8 +33,9 @@ builder.Services.AddSingleton(sp => new ProcessorRouter(
     sp.GetRequiredService<ProcessorRegistry>(),
     sp.GetRequiredService<ResiliencePipelineFactory>()));
 
-// Workers asíncronos: la "cola" (envío).
+// Workers asíncronos: la "cola" (envío) y la conciliación (incertidumbre).
 builder.Services.AddHostedService<OutboxDispatcher>();
+builder.Services.AddHostedService<ReconciliationWorker>();
 
 var app = builder.Build();
 
