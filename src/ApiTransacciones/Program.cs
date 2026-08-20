@@ -1,6 +1,7 @@
 using ApiTransacciones.Api;
 using ApiTransacciones.Persistence;
 using ApiTransacciones.Processors;
+using ApiTransacciones.Resilience;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,12 @@ builder.Services.AddSingleton(sp =>
         Alternative = new FakeProcessor("alternative", altBehavior, clock)
     };
 });
+
+// Resiliencia: breaker compartido (singleton) + router.
+builder.Services.AddSingleton<ResiliencePipelineFactory>();
+builder.Services.AddSingleton(sp => new ProcessorRouter(
+    sp.GetRequiredService<ProcessorRegistry>(),
+    sp.GetRequiredService<ResiliencePipelineFactory>()));
 
 var app = builder.Build();
 
