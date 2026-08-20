@@ -16,7 +16,7 @@ public class ProcessorRouter(ProcessorRegistry reg, ResiliencePipelineFactory pi
         if (pipelines.Breaker.CircuitState == CircuitState.Open)
             return (await ChargeAlternative(idempotencyKey, amount, ct), reg.Alternative.Name);
 
-        var primary = await ChargeThrough(pipelines.BuildPrimary(), reg.Primary, idempotencyKey, amount, ct);
+        var primary = await ChargeThrough(pipelines.Primary, reg.Primary, idempotencyKey, amount, ct);
 
         // Éxito o timeout del primary → se resuelve con ese resultado.
         // Fallo "claro" (rechazo) → reenviamos la MISMA key al alternativo.
@@ -27,7 +27,7 @@ public class ProcessorRouter(ProcessorRegistry reg, ResiliencePipelineFactory pi
     }
 
     private Task<ChargeResult> ChargeAlternative(string key, decimal amount, CancellationToken ct)
-        => ChargeThrough(pipelines.BuildAlternative(), reg.Alternative, key, amount, ct);
+        => ChargeThrough(pipelines.Alternative, reg.Alternative, key, amount, ct);
 
     /// Ejecuta el cobro a través de un pipeline de Polly, traduciendo cualquier
     /// excepción (timeout tras reintentos, breaker abierto) a ChargeOutcome.Timeout.

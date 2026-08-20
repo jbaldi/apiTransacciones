@@ -26,6 +26,29 @@ public class ProcessorRouterTests
     }
 
     [Fact]
+    public async Task VariosCobrosSeguidos_PorElPrimary_NoRompenElPipeline()
+    {
+        // Regresión: el pipeline (y su CircuitBreakerStateProvider) se construye una sola vez
+        // y se reutiliza. Reconstruirlo por cobro lanzaba "provider already initialized".
+        var pipelines = new ResiliencePipelineFactory();
+        var reg = new ProcessorRegistry
+        {
+            Primary = new AlwaysOk("primary"),
+            Alternative = new AlwaysOk("alternative"),
+            PrimaryBehavior = new ProcessorBehavior(),
+            AlternativeBehavior = new ProcessorBehavior()
+        };
+        var router = new ProcessorRouter(reg, pipelines);
+
+        for (var i = 0; i < 5; i++)
+        {
+            var r = await router.ChargeAsync($"key-{i}", 100m, default);
+            Assert.Equal(ChargeOutcome.Ok, r.Result.Outcome);
+            Assert.Equal("primary", r.ProcessorUsed);
+        }
+    }
+
+    [Fact]
     public async Task Breaker_SeAbre_TrasFallosDelPrimary_YRuteaAlAlternativo()
     {
         var pipelines = new ResiliencePipelineFactory();

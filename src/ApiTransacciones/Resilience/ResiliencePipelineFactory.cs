@@ -4,17 +4,21 @@ using Polly.Retry;
 
 namespace ApiTransacciones.Resilience;
 
-/// Construye los pipelines de resiliencia del envío.
+/// Construye los pipelines de resiliencia UNA sola vez y los reutiliza (los pipelines de
+/// Polly son thread-safe y están pensados para reusarse; además el CircuitBreakerStateProvider
+/// sólo puede atarse a un pipeline, y el breaker necesita persistir su ventana entre cobros).
 /// - Primary: timeout corto + reintentos con backoff exponencial + circuit breaker.
 /// - Alternativo (OpenPass): timeout corto + reintentos, SIN breaker (es el plan B).
-/// El breaker se expone para que el router decida el ruteo.
 public class ResiliencePipelineFactory
 {
     public CircuitBreakerStateProvider Breaker { get; } = new();
+    public ResiliencePipeline Primary { get; }
+    public ResiliencePipeline Alternative { get; }
 
-    // Pipeline del procesador primario. El breaker abre ante fallos repetidos.
-    public ResiliencePipeline BuildPrimary() =>
-        new ResiliencePipelineBuilder()
+    public ResiliencePipelineFactory()
+    {
+        // Pipeline del procesador primario. El breaker abre ante fallos repetidos.
+        Primary = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
                 MaxRetryAttempts = 3,
@@ -35,9 +39,8 @@ public class ResiliencePipelineFactory
             .AddTimeout(TimeSpan.FromSeconds(2)) // timeout corto: no colgamos
             .Build();
 
-    // Pipeline del procesador alternativo: timeout + reintentos, sin breaker.
-    public ResiliencePipeline BuildAlternative() =>
-        new ResiliencePipelineBuilder()
+        // Pipeline del procesador alternativo: timeout + reintentos, sin breaker.
+        Alternative = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
                 MaxRetryAttempts = 2,
@@ -48,4 +51,5 @@ public class ResiliencePipelineFactory
             })
             .AddTimeout(TimeSpan.FromSeconds(2))
             .Build();
+    }
 }
