@@ -1003,7 +1003,7 @@ public class EnvioTests
     {
         using var app = new TestAppFactory();
         var client = app.CreateClient();
-        // Primary siempre falla → breaker abre → OpenPass (alternative) cobra.
+        // Primary siempre falla → breaker abre → el alternativo cobra.
         await client.PostAsJsonAsync("/demo/processor-behavior",
             new ProcessorBehaviorRequest("primary", "fail", 1000, "PAID"));
 
@@ -1069,7 +1069,7 @@ using Polly.CircuitBreaker;
 namespace ApiTransacciones.Resilience;
 
 /// Rutea el cobro: usa el primary a través del pipeline; si el breaker está abierto
-/// (o el primary revienta), va al alternative (OpenPass). Devuelve qué procesador cobró.
+/// (o el primary revienta), va al alternative. Devuelve qué procesador cobró.
 public class ProcessorRouter(ProcessorRegistry reg, ResiliencePipelineFactory pipelines)
 {
     public async Task<(ChargeResult Result, string ProcessorUsed)> ChargeAsync(

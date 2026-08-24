@@ -8,7 +8,7 @@ namespace ApiTransacciones.Resilience;
 /// Polly son thread-safe y están pensados para reusarse; además el CircuitBreakerStateProvider
 /// sólo puede atarse a un pipeline, y el breaker necesita persistir su ventana entre cobros).
 /// - Primary: timeout corto + reintentos con backoff exponencial + circuit breaker.
-/// - Alternativo (OpenPass): timeout corto + reintentos, SIN breaker (es el plan B).
+/// - Alternativo: timeout corto + reintentos, SIN breaker (es el plan B).
 public class ResiliencePipelineFactory
 {
     public CircuitBreakerStateProvider Breaker { get; } = new();

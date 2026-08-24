@@ -15,7 +15,7 @@ public class ProcessorRouterTests
             => Task.FromResult(ProcessorStatus.Unknown);
     }
 
-    // Procesador que siempre cobra bien (el alternativo / OpenPass).
+    // Procesador que siempre cobra bien (el alternativo).
     private sealed class AlwaysOk(string name) : IPaymentProcessor
     {
         public string Name => name;
@@ -66,7 +66,7 @@ public class ProcessorRouterTests
         Assert.Equal(ChargeOutcome.Timeout, first.Result.Outcome); // no asume: timeout
         Assert.Equal(CircuitState.Open, pipelines.Breaker.CircuitState);
 
-        // Segundo cobro: con el breaker ABIERTO, se rutea directo al alternativo (OpenPass).
+        // Segundo cobro: con el breaker ABIERTO, se rutea directo al alternativo.
         var second = await router.ChargeAsync("key-2", 100m, default);
         Assert.Equal(ChargeOutcome.Ok, second.Result.Outcome);
         Assert.Equal("alternative", second.ProcessorUsed);

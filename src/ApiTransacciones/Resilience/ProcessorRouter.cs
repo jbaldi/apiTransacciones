@@ -5,7 +5,7 @@ using Polly.CircuitBreaker;
 namespace ApiTransacciones.Resilience;
 
 /// Rutea el cobro: usa el primary a través de su pipeline; si el breaker está abierto,
-/// si el primary revienta, o si rechaza el pago, va al alternative (OpenPass).
+/// si el primary revienta, o si rechaza el pago, va al alternative.
 /// Devuelve qué procesador cobró. Ante timeout NO asume: devuelve ChargeOutcome.Timeout.
 public class ProcessorRouter(ProcessorRegistry reg, ResiliencePipelineFactory pipelines)
 {

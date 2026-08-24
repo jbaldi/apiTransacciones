@@ -13,7 +13,7 @@ demostrando de forma tangible cuatro garantías:
 1. **Idempotency-key end-to-end** (cliente↔API y API↔procesador).
 2. **Timeout ≠ fallo** → estado `INCIERTO` (nunca asumir).
 3. **Conciliación / reconciliation** como única fuente de verdad del dinero.
-4. **Circuit breaker + ruteo a procesador alternativo** (OpenPass).
+4. **Circuit breaker + ruteo a procesador alternativo**.
 
 Bonus: patrón **Outbox** (persistir el evento en la misma transacción de BD y
 publicarlo aparte) y **máquina de estados / Saga** para el ciclo de vida del
@@ -43,7 +43,7 @@ procesadores de pago reales, despliegue productivo.
 | Persistencia | SQLite + EF Core | BD transaccional real en un archivo → Outbox e idempotencia se demuestran de verdad (sobreviven a reinicios). |
 | Cola / async | `System.Threading.Channels` + `BackgroundService` | La "cola" en memoria; worker lee el Outbox y despacha. |
 | Resiliencia | Polly (timeout + retry backoff exponencial + circuit breaker) | Estándar de industria en .NET. |
-| Procesadores | 2 implementaciones falsas (`PrimaryProcessor`, `AlternativeProcessor`=OpenPass) con "guiones" configurables | Permite forzar timeouts/fallos y disparar breaker+ruteo en la demo. |
+| Procesadores | 2 implementaciones falsas (`PrimaryProcessor`, `AlternativeProcessor`) con "guiones" configurables | Permite forzar timeouts/fallos y disparar breaker+ruteo en la demo. |
 | Conciliación | `GetStatus()` en el procesador falso + `ReconciliationWorker` | Fuente de verdad del dinero. |
 | Tests | xUnit + `WebApplicationFactory` + SQLite in-memory + `FakeTimeProvider` | Integración realista sin esperas reales. |
 
@@ -64,7 +64,7 @@ key repetida → se devuelve el resultado existente (no reprocesa).
 `OutboxDispatcher` (BackgroundService) lee mensajes `PENDING` del Outbox y los
 manda al `ProcessorRouter`. El router aplica la `ResiliencePipeline` de Polly
 (timeout corto + retry con backoff exponencial + circuit breaker). Si el breaker
-está abierto, rutea al `AlternativeProcessor` (OpenPass). Se reenvía la **misma
+está abierto, rutea al `AlternativeProcessor`. Se reenvía la **misma
 idempotency-key** al procesador. Resultado:
 - OK → `PAGADO`
 - Falla clara → `FALLIDO`

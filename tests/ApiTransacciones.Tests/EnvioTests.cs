@@ -36,7 +36,7 @@ public class EnvioTests
     {
         using var app = new TestAppFactory();
         var client = app.CreateClient();
-        // Primary rechaza siempre → se rutea la MISMA key al alternativo (OpenPass), que cobra.
+        // Primary rechaza siempre → se rutea la MISMA key al alternativo, que cobra.
         await client.PostAsJsonAsync("/demo/processor-behavior",
             new ProcessorBehaviorRequest("primary", "fail", 1000, "PAID"));
 

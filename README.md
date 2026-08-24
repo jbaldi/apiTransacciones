@@ -40,7 +40,7 @@ flowchart LR
     DB -.->|lee Outbox| D[OutboxDispatcher<br/>· worker ·]
     D --> RT{ProcessorRouter<br/>breaker abierto?}
     RT -->|no| P[Primary<br/>+ Polly: timeout/retry/breaker]
-    RT -->|sí| A[Alternative<br/>OpenPass]
+    RT -->|sí| A[Procesador<br/>alternativo]
     P -->|OK| PAG[PAGADO]
     P -->|timeout| INC[INCIERTO]
     A --> PAG
@@ -76,7 +76,7 @@ stateDiagram-v2
 | 🔑 **Idempotency-key end-to-end** | Header del cliente + constraint `UNIQUE`; la misma key se reenvía al procesador. |
 | ⏱️ **Timeout ≠ fallo → `INCIERTO`** | Ante timeout no se asume nada; queda en verificación. |
 | 🔍 **Conciliación = fuente de verdad** | Un worker consulta el `status` real del procesador; ahí se define el dinero. |
-| 🔌 **Circuit breaker + ruteo** | Polly abre el breaker ante fallos y rutea al procesador alternativo (OpenPass). |
+| 🔌 **Circuit breaker + ruteo** | Polly abre el breaker ante fallos y rutea al procesador alternativo. |
 | 📦 **Patrón Outbox** *(bonus)* | Pago + evento en la **misma transacción**: si el proceso se cae, el pago no se pierde. |
 | 🔄 **Saga / máquina de estados** *(bonus)* | Ciclo de vida explícito con transiciones validadas y compensaciones. |
 
